@@ -3,10 +3,18 @@ from django.http import HttpResponse
 
 from .models import Movie
 
+from dotenv import load_dotenv
+from openai import OpenAI
+
 import matplotlib.pyplot as plt
 import matplotlib
 import io
 import urllib, base64
+import numpy as np
+import os
+
+load_dotenv("../openai.env")
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def home(request):
     #return HttpResponse('<h1>Welcome to Home Page</h1>')
@@ -123,3 +131,46 @@ def generate_bar_chart(data, xlabel, ylabel):
     buffer.close()
     graphic = base64.b64encode(image_png).decode('utf-8')
     return graphic
+
+
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+def recommend_movie(request):
+    recommended_movie = None
+    user_prompt = ""
+    message = None  # inicializamos message
+
+    if request.method == "POST":
+        user_prompt = request.POST.get("prompt", "").strip()
+
+        if user_prompt:  # verificamos que no esté vacío
+            # Generar embedding del prompt
+            response = client.embeddings.create(
+                input=[user_prompt],
+                model="text-embedding-3-small"
+            )
+            prompt_emb = np.array(response.data[0].embedding, dtype=np.float32)
+
+            # Buscar película más similar
+            best_movie = None
+            max_similarity = -1
+
+            for movie in Movie.objects.all():
+                movie_emb = np.frombuffer(movie.emb, dtype=np.float32)
+                similarity = cosine_similarity(prompt_emb, movie_emb)
+
+                if similarity > max_similarity:
+                    max_similarity = similarity
+                    best_movie = movie
+
+            recommended_movie = best_movie
+        else:
+            message = "Escribe una descripción para obtener una recomendación."
+
+    return render(request, "recommend.html", {
+        "prompt": user_prompt,
+        "recommended_movie": recommended_movie,
+        "message": message
+    })

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+
+  <!-- Título -->
+  <h2 class="mb-4">Recomendador de Películas</h2>
+
+  <!-- Formulario -->
+  <form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="prompt" class="form-label">Describe la película que buscas:</label>
+      <textarea class="form-control" id="prompt" name="prompt" rows="3" placeholder="Ejemplo: una película de ciencia ficción con viajes espaciales">{{ prompt }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Recomendar</button>
+  </form>
+
+  <!-- Mensaje si no se escribió nada -->
+  {% if message %}
+  <div class="alert alert-warning mt-3">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <!-- Resultado de la recomendación -->
+  {% if recommended_movie %}
+  <div class="card mt-4">
+    <div class="card-body">
+      <h5 class="card-title">{{ recommended_movie.title }}</h5>
+      <p class="card-text">{{ recommended_movie.description }}</p>
+      {% if recommended_movie.image %}
+      <img src="{{ recommended_movie.image.url }}" alt="{{ recommended_movie.title }}" class="img-fluid mt-3">
+      {% endif %}
+      {% if recommended_movie.url %}
+      <p class="mt-3"><a href="{{ recommended_movie.url }}" target="_blank" class="btn btn-outline-primary">Ver más</a></p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
